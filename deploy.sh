@@ -80,9 +80,13 @@ setup_env() {
     
     if [ ! -f ".env" ]; then
         print_message $YELLOW "Creating default .env file..."
-        cat > .env << 'EOF'
+        
+        # Generate a secure random secret key
+        SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))" 2>/dev/null || openssl rand -base64 50 | tr -d '\n/+=' | head -c 50)
+        
+        cat > .env << EOF
 # Django Configuration
-SECRET_KEY=change-this-in-production-use-a-long-random-string
+SECRET_KEY=$SECRET_KEY
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 
@@ -91,13 +95,14 @@ DATABASE_NAME=gambling_db
 DATABASE_USER=gambling_user
 DATABASE_PASSWORD=gambling_password
 DATABASE_HOST=localhost
-DATABASE_PORT=5432
+DATABASE_PORT=5433
 
 # CORS
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 EOF
         print_message $GREEN "✓ Default .env file created"
-        print_message $YELLOW "⚠ Update SECRET_KEY and DATABASE_PASSWORD for production!"
+        print_message $GREEN "✓ SECRET_KEY auto-generated"
+        print_message $YELLOW "⚠ Update DATABASE_PASSWORD for production!"
     else
         print_message $GREEN "✓ .env file exists"
     fi
