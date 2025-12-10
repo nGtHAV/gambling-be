@@ -187,13 +187,17 @@ setup_db() {
     
     print_message $YELLOW "Creating database and user on port $DB_PORT..."
     
-    # Create user and database
-    sudo -u $PG_ADMIN psql -p $DB_PORT -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" 2>/dev/null || print_message $YELLOW "User may already exist"
-    sudo -u $PG_ADMIN psql -p $DB_PORT -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" 2>/dev/null || print_message $YELLOW "Database may already exist"
+    # Create user (or update password if exists)
+    sudo -u $PG_ADMIN psql -p $DB_PORT -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" 2>/dev/null || \
+    sudo -u $PG_ADMIN psql -p $DB_PORT -c "ALTER USER $DB_USER WITH PASSWORD '$DB_PASS';"
+    print_message $GREEN "✓ User $DB_USER ready"
+    
+    # Create database
+    sudo -u $PG_ADMIN psql -p $DB_PORT -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" 2>/dev/null || print_message $YELLOW "Database already exists"
     sudo -u $PG_ADMIN psql -p $DB_PORT -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
     
     print_message $GREEN "✓ Database setup complete"
-    print_message $YELLOW "Update .env file with your database credentials (PORT=$DB_PORT)"
+    print_message $YELLOW "Make sure .env has: DATABASE_PASSWORD=$DB_PASS and DATABASE_PORT=$DB_PORT"
 }
 
 # Show help
