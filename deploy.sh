@@ -86,14 +86,18 @@ SECRET_KEY=change-this-in-production-use-a-long-random-string
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 
-# Database (SQLite for development)
-DATABASE_URL=sqlite:///db.sqlite3
+# PostgreSQL Database
+DATABASE_NAME=gambling_db
+DATABASE_USER=gambling_user
+DATABASE_PASSWORD=gambling_password
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
 
 # CORS
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 EOF
         print_message $GREEN "✓ Default .env file created"
-        print_message $YELLOW "⚠ Update SECRET_KEY for production!"
+        print_message $YELLOW "⚠ Update SECRET_KEY and DATABASE_PASSWORD for production!"
     else
         print_message $GREEN "✓ .env file exists"
     fi
@@ -147,6 +151,38 @@ status() {
     fi
 }
 
+# Setup PostgreSQL database
+setup_db() {
+    print_header "PostgreSQL Database Setup"
+    
+    print_message $YELLOW "This will create the PostgreSQL database and user."
+    print_message $YELLOW "You need PostgreSQL installed and running."
+    echo ""
+    
+    read -p "PostgreSQL admin user (default: postgres): " PG_ADMIN
+    PG_ADMIN=${PG_ADMIN:-postgres}
+    
+    read -p "Database name (default: gambling_db): " DB_NAME
+    DB_NAME=${DB_NAME:-gambling_db}
+    
+    read -p "Database user (default: gambling_user): " DB_USER
+    DB_USER=${DB_USER:-gambling_user}
+    
+    read -sp "Database password (default: gambling_password): " DB_PASS
+    DB_PASS=${DB_PASS:-gambling_password}
+    echo ""
+    
+    print_message $YELLOW "Creating database and user..."
+    
+    # Create user and database
+    sudo -u $PG_ADMIN psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" 2>/dev/null || print_message $YELLOW "User may already exist"
+    sudo -u $PG_ADMIN psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" 2>/dev/null || print_message $YELLOW "Database may already exist"
+    sudo -u $PG_ADMIN psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+    
+    print_message $GREEN "✓ Database setup complete"
+    print_message $YELLOW "Update .env file with your database credentials"
+}
+
 # Show help
 show_help() {
     echo "COSC Casino Backend Deployment Script"
@@ -155,6 +191,7 @@ show_help() {
     echo ""
     echo "Commands:"
     echo "  install    Install dependencies and setup environment"
+    echo "  setup-db   Create PostgreSQL database and user"
     echo "  migrate    Run database migrations"
     echo "  dev        Start development server"
     echo "  prod       Start production server (Gunicorn)"
@@ -164,6 +201,7 @@ show_help() {
     echo ""
     echo "Quick Start:"
     echo "  ./deploy.sh install"
+    echo "  ./deploy.sh setup-db   # Create PostgreSQL database"
     echo "  ./deploy.sh migrate"
     echo "  ./deploy.sh superuser"
     echo "  ./deploy.sh dev"
@@ -181,6 +219,9 @@ case "${1:-help}" in
         ;;
     migrate)
         migrate
+        ;;
+    setup-db)
+        setup_db
         ;;
     dev)
         dev

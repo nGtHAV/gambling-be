@@ -6,7 +6,7 @@ A Django REST Framework backend for the COSC Casino educational gambling platfor
 
 - **Django 6.0** - Web framework
 - **Django REST Framework** - API toolkit
-- **SQLite** (dev) / **PostgreSQL** (prod) - Database
+- **PostgreSQL** - Database
 - **JWT** - Authentication
 
 ## Quick Start
@@ -14,6 +14,9 @@ A Django REST Framework backend for the COSC Casino educational gambling platfor
 ```bash
 # Install dependencies
 ./deploy.sh install
+
+# Setup PostgreSQL database
+./deploy.sh setup-db
 
 # Run migrations
 ./deploy.sh migrate
@@ -32,6 +35,7 @@ Backend runs at: **http://localhost:8000**
 | Command | Description |
 |---------|-------------|
 | `./deploy.sh install` | Install dependencies and setup |
+| `./deploy.sh setup-db` | Create PostgreSQL database and user |
 | `./deploy.sh migrate` | Run database migrations |
 | `./deploy.sh dev` | Start development server |
 | `./deploy.sh prod` | Start production server (Gunicorn) |
@@ -43,6 +47,10 @@ Backend runs at: **http://localhost:8000**
 ```bash
 # Activate virtual environment
 source venv/bin/activate
+
+# Setup PostgreSQL database (as postgres user)
+sudo -u postgres psql -c "CREATE USER gambling_user WITH PASSWORD 'gambling_password';"
+sudo -u postgres psql -c "CREATE DATABASE gambling_db OWNER gambling_user;"
 
 # Django commands
 python manage.py migrate
@@ -78,13 +86,17 @@ gambling_be/
 Create `.env`:
 
 ```env
-# Database (SQLite for development)
-DATABASE_URL=sqlite:///db.sqlite3
-
 # Django
 SECRET_KEY=your-secret-key
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
+
+# PostgreSQL Database
+DATABASE_NAME=gambling_db
+DATABASE_USER=gambling_user
+DATABASE_PASSWORD=gambling_password
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
 
 # CORS
 CORS_ALLOWED_ORIGINS=http://localhost:3000
