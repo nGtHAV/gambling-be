@@ -81,6 +81,10 @@ setup_env() {
     if [ ! -f ".env" ]; then
         print_message $YELLOW "Creating default .env file..."
         
+        # Prompt for custom database port
+        read -p "PostgreSQL port (default: 5432): " DB_PORT
+        DB_PORT=${DB_PORT:-5432}
+        
         # Generate a secure random secret key
         SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))" 2>/dev/null || openssl rand -base64 50 | tr -d '\n/+=' | head -c 50)
         
@@ -95,13 +99,14 @@ DATABASE_NAME=gambling_db
 DATABASE_USER=gambling_user
 DATABASE_PASSWORD=gambling_password
 DATABASE_HOST=localhost
-DATABASE_PORT=5433
+DATABASE_PORT=$DB_PORT
 
 # CORS
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 EOF
         print_message $GREEN "✓ Default .env file created"
         print_message $GREEN "✓ SECRET_KEY auto-generated"
+        print_message $GREEN "✓ Database port set to $DB_PORT"
         print_message $YELLOW "⚠ Update DATABASE_PASSWORD for production!"
     else
         print_message $GREEN "✓ .env file exists"
@@ -167,6 +172,9 @@ setup_db() {
     read -p "PostgreSQL admin user (default: postgres): " PG_ADMIN
     PG_ADMIN=${PG_ADMIN:-postgres}
     
+    read -p "PostgreSQL port (default: 5432): " DB_PORT
+    DB_PORT=${DB_PORT:-5432}
+    
     read -p "Database name (default: gambling_db): " DB_NAME
     DB_NAME=${DB_NAME:-gambling_db}
     
@@ -177,15 +185,15 @@ setup_db() {
     DB_PASS=${DB_PASS:-gambling_password}
     echo ""
     
-    print_message $YELLOW "Creating database and user..."
+    print_message $YELLOW "Creating database and user on port $DB_PORT..."
     
     # Create user and database
-    sudo -u $PG_ADMIN psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" 2>/dev/null || print_message $YELLOW "User may already exist"
-    sudo -u $PG_ADMIN psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" 2>/dev/null || print_message $YELLOW "Database may already exist"
-    sudo -u $PG_ADMIN psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+    sudo -u $PG_ADMIN psql -p $DB_PORT -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" 2>/dev/null || print_message $YELLOW "User may already exist"
+    sudo -u $PG_ADMIN psql -p $DB_PORT -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" 2>/dev/null || print_message $YELLOW "Database may already exist"
+    sudo -u $PG_ADMIN psql -p $DB_PORT -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
     
     print_message $GREEN "✓ Database setup complete"
-    print_message $YELLOW "Update .env file with your database credentials"
+    print_message $YELLOW "Update .env file with your database credentials (PORT=$DB_PORT)"
 }
 
 # Show help
